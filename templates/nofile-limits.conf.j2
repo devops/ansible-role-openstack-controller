@@ -1,0 +1,4 @@
+# {{ ansible_managed }}
+# Raising open file limit for OpenStack services
+*         soft    nofile          {{ openstack_soft_nofile_limits }}
+*         hard    nofile          {{ openstack_hard_nofile_limits }}

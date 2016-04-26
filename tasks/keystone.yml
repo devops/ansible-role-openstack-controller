@@ -1,0 +1,106 @@
+---
+# tasks file for keystone
+
+# Prerequisites
+- name: Prepare Database for keystone.
+  include: database.yml
+  vars:
+    db_name: "{{ openstack_keystone_db_name }}"
+    db_user: "{{ openstack_keystone_db_user }}"
+    db_password: "{{ openstack_keystone_db_password }}"
+    db_priv: "{{ openstack_keystone_db_name }}.*:ALL"
+  tags: database
+
+- name: Install OpenStack keystone packages.
+  yum: name={{ item }} state=installed
+  with_items:
+    - openstack-keystone
+    - python-keystoneclient
+    - httpd
+    - mod_wsgi
+    - python-memcached
+
+- name: Configure httpd Listen Port.
+  lineinfile: >
+    dest=/etc/httpd/conf/httpd.conf
+    regexp="{{ item.regexp }}"
+    line="{{ item.line }}"
+    state=present
+  with_items:
+    - { regexp: "^#?Listen", line: "Listen {{ mgmt_ip }}:80" }
+
+- name: Copy the configuration files for keystone.
+  template: src=keystone.conf.j2 dest=/etc/keystone/keystone.conf
+  #notify: restart keystone
+
+- name: Copy the configuration files for keystone wsgi.
+  template: src=wsgi-keystone.conf.j2 dest=/etc/httpd/conf.d/wsgi-keystone.conf
+  notify: restart httpd
+  
+- name: Ensure keystone is started and enabled on boot.
+  service: "name={{ item }} state=started enabled=yes"
+  with_items:
+    - httpd
+
+- name: Waiting for keystone service is started.
+  wait_for: "host={{ openstack_controller_host }} port=35357 delay=10 timeout=30"
+  run_once: True
+
+- name: DB sync for keystone.
+  shell: su -s /bin/sh -c "keystone-manage db_sync" keystone
+  ignore_errors: True
+  run_once: True
+
+- name: Create the service entity for keystone.
+  include: service_create.yml
+  vars:
+    name: keystone
+    type: identity
+    description: OpenStack Identity
+
+- name: Create the API endpoint for keystone.
+  include: endpoint_create.yml
+  vars:
+    service: identity
+    region: RegionOne
+    endpoints:
+      adminurl: "{{ openstack_endpoint_admin_url }}"
+      internalurl: "{{ openstack_endpoint_internal_url }}"
+      publicurl: "{{ openstack_endpoint_public_url }}"
+
+# admin
+- name: "Ensure the 'admin' project exists"
+  keystone_user: >
+    tenant=admin
+    tenant_description="Admin Project"
+    token={{ openstack_admin_token }}
+    endpoint={{ openstack_endpoint_admin_url }}
+  run_once: True
+
+- name: "Ensure the 'admin' user exists"
+  keystone_user: >
+    user=admin
+    password={{ openstack_admin_password }}
+    tenant=admin
+    token={{ openstack_admin_token }}
+    endpoint={{ openstack_endpoint_admin_url }}
+  run_once: True
+
+- name: "Ensure the 'admin' role exists"
+  keystone_user: >
+    role=admin
+    user=admin
+    tenant=admin
+    token={{ openstack_admin_token }}
+    endpoint={{ openstack_endpoint_admin_url }}
+  run_once: True
+
+# service
+- name: "Ensure the 'service' project exists"
+  keystone_user: >
+    tenant=service
+    tenant_description="Service Project"
+    token={{ openstack_admin_token }}
+    endpoint={{ openstack_endpoint_admin_url }}
+  run_once: True
+

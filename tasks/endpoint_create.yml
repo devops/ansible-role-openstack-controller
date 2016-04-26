@@ -1,0 +1,27 @@
+---
+# - name: Create API endpoint for network service
+#   include: endpoint_create.yml
+#   vars:
+#     service: identity
+#     region: RegionOne
+#     endpoints:
+#       adminurl: {{ openstack_endpoint_admin_url }}
+#       internalurl: {{ openstack_endpoint_internal_url }}
+#       publicurl: {{ openstack_endpoint_public_url }}
+
+
+- name: "Check if API endpoint exists for service {{ service }}"
+  shell: "openstack endpoint list --service {{ service }}"
+  register: check_endpoint_result
+  environment: token_auth_env
+  ignore_errors: True
+  run_once: True
+
+- name: "Specify API endpoints for {{ service }} service"
+  when: check_endpoint_result.rc == 0
+  shell: |
+    openstack endpoint create --region {{ region }} {{ service }} public {{ endpoints.publicurl }}
+    openstack endpoint create --region {{ region }} {{ service }} internal {{ endpoints.internalurl }}
+    openstack endpoint create --region {{ region }} {{ service }} admin {{ endpoints.adminurl }}
+  environment: token_auth_env
+  run_once: True

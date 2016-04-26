@@ -1,0 +1,66 @@
+---
+# tasks file for nova
+
+# Prerequisites
+- name: Prepare Database for nova.
+  include: database.yml
+  vars:
+    db_name: "{{ openstack_nova_db_name }}"
+    db_user: "{{ openstack_nova_db_user }}"
+    db_password: "{{ openstack_nova_db_password }}"
+  tags: database
+
+- name: Create the service user for nova.
+  include: create_service_user.yml
+  vars:
+    username: nova
+    password: "{{ openstack_nova_keystone_password }}"
+
+- name: Create the service entity for nova.
+  include: service_create.yml
+  vars:
+    name: nova
+    type: compute
+    description: OpenStack Compute
+
+- name: Create the API endpoint for nova.
+  include: endpoint_create.yml
+  vars:
+    service: compute
+    region: RegionOne
+    endpoints:
+      adminurl: "{{ openstack_nova_adminurl }}"
+      internalurl: "{{ openstack_nova_intelnalurl }}"
+      publicurl: "{{ openstack_nova_publicurl }}"
+
+# Install and configure
+- name: Install OpenStack nova packages.
+  yum: name={{ item }} state=installed
+  with_items:
+    - openstack-nova-api
+    - openstack-nova-cert
+    - openstack-nova-conductor
+    - openstack-nova-console
+    - openstack-nova-novncproxy
+    - openstack-nova-scheduler
+    - python-novaclient
+
+- name: Copy the configuration files for nova.
+  template: src=nova.conf.j2 dest=/etc/nova/nova.conf
+  notify: restart nova
+
+- name: DB sync for nova.
+  shell: su -s /bin/sh -c "nova-manage db sync" nova
+  ignore_errors: True
+  run_once: True
+
+- name: Ensure nova service  is started and enabled on boot.
+  service: name={{ item }} enabled=yes state=started
+  ignore_errors: True
+  with_items:
+    - openstack-nova-api
+    - openstack-nova-cert
+    - openstack-nova-consoleauth
+    - openstack-nova-scheduler
+    - openstack-nova-conductor
+    - openstack-nova-novncproxy

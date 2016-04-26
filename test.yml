@@ -1,0 +1,8 @@
+---
+# test file
+
+- name: Install OpenStack Controller.
+  hosts: controller
+  roles:
+    - role: ansible-role-openstack-controller
+

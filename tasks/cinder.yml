@@ -1,0 +1,74 @@
+---
+# tasks file for cinder
+
+# Prerequisites
+- name: Prepare Database for cinder.
+  include: database.yml
+  vars:
+    db_name: "{{ openstack_cinder_db_name }}"
+    db_user: "{{ openstack_cinder_db_user }}"
+    db_password: "{{ openstack_cinder_db_password }}"
+  tags: database
+
+- name: Create the service user for cinder.
+  include: create_service_user.yml
+  vars:
+    username: cinder
+    password: "{{ openstack_cinder_user_password }}"
+
+- name: Create the service entity for cinder.
+  include: service_create.yml
+  vars:
+    name: cinder
+    type: volume
+    description: OpenStack Block Storage
+
+- name: Create the service entity for cinderv2.
+  include: service_create.yml
+  vars:
+    name: cinderv2
+    type: volumev2
+    description: OpenStack Block Storage
+
+- name: Create the API endpoint for volume.
+  include: endpoint_create.yml
+  vars:
+    service: volume
+    region: RegionOne
+    endpoints:
+      adminurl: "{{ openstack_cinder_adminurl_v1 }}"
+      internalurl: "{{ openstack_cinder_internalurl_v1 }}"
+      publicurl: "{{ openstack_cinder_publicurl_v1 }}"
+
+- name: Create the API endpoint for volumev2.
+  include: endpoint_create.yml
+  vars:
+    service: volumev2
+    region: RegionOne
+    endpoints:
+      adminurl: "{{ openstack_cinder_adminurl_v2 }}"
+      internalurl: "{{ openstack_cinder_intelnalurl_v2 }}"
+      publicurl: "{{ openstack_cinder_publicurl_v2 }}"
+
+# Install and configure
+- name: Install OpenStack cinder packages.
+  yum: name={{ item }} state=installed
+  with_items:
+    - openstack-cinder
+    - python-cinderclient
+
+- name: Copy the configuration files for cinder.
+  template: src=cinder.conf.j2 dest=/etc/cinder/cinder.conf
+  notify: restart cinder
+
+- name: DB sync for cinder.
+  shell: su -s /bin/sh -c "cinder-manage db sync" cinder
+  ignore_errors: True
+  run_once: True
+
+- name: Ensure cinder service is started and enabled on boot.
+  service: name={{ item }} enabled=yes state=started
+  with_items:
+    - openstack-cinder-api
+    - openstack-cinder-scheduler
+    - openstack-cinder-volume

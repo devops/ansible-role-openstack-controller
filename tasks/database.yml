@@ -1,0 +1,53 @@
+---
+# tasks file for database
+
+- name: 'Create Database for openstack "{{ db_name }}"'
+  mysql_db:
+    name: "{{ db_name }}"
+    collation: "{{ db_collation | default('utf8_general_ci') }}"
+    encoding: "{{ db_encoding | default('utf8') }}"
+    login_host: "{{ openstack_database_host }}"
+    login_user: "{{ openstack_database_root | default('root') }}"
+    login_password: "{{ openstack_database_root_password }}"
+    state: present
+  run_once: True
+
+- name: 'Setup Database User for openstack "{{ db_name }}"'
+  mysql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    host: "{{ item }}"
+    priv: "{{ db_priv | default('*.*:ALL') }}"
+    login_host: "{{ openstack_database_host }}"
+    login_user: "{{ openstack_database_root | default('root') }}"
+    login_password: "{{ openstack_database_root_password }}"
+    state: present
+  with_items:
+    - localhost
+    - "%"
+  run_once: True
+
+# - name: Setup DB for openstack.
+#   mysql_db:
+#     login_host: "{{ openstack_database_host }}"
+#     login_user: "{{ openstack_database_root}}"
+#     login_password: "{{ openstack_database_root_password }}"
+#     name: "{{ item.name }}"
+#     collation: "{{ item.collation | default('utf8_general_ci') }}"
+#     encoding: "{{ item.encoding | default('utf8') }}"
+#     state: present
+#   with_items:
+#     - "{{ openstack_databases }}"
+#
+# - name: Setup DB User for openstack.
+#   mysql_user:
+#     login_host: "{{ openstack_database_host }}"
+#     login_user: "{{ openstack_database_root}}"
+#     login_password: "{{ openstack_database_root_password }}"
+#     name: "{{ item.name }}"
+#     host: "{{ item.host | default('localhost') }}"
+#     password: "{{ item.password }}"
+#     priv: "{{ item.priv | default('*.*:ALL') }}"
+#     state: present
+#   with_items:
+#     - "{{ openstack_databases_users }}"

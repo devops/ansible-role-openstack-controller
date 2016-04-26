@@ -1,0 +1,12 @@
+---
+# tasks file for horizon
+
+- name: Install OpenStack horizon packages.
+  yum: name={{ item }} state=installed
+  with_items:
+    - openstack-dashboard
+
+- name: Copy the configuration files for horizon.
+  template: src=horizon_local_settings.j2 dest=/etc/openstack-dashboard/local_settings
+  notify: restart horizon
+  

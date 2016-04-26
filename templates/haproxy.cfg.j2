@@ -1,0 +1,151 @@
+global
+  chroot  /var/lib/haproxy
+  daemon
+  group  haproxy
+  maxconn  4000
+  pidfile  /var/run/haproxy.pid
+  user  haproxy
+
+defaults
+  log  global
+  maxconn  4000
+  option  redispatch
+  retries  3
+  timeout  http-request 10s
+  timeout  queue 1m
+  timeout  connect 10s
+  timeout  client 1m
+  timeout  server 1m
+  timeout  check 10s
+
+listen Stats
+  bind {{ openstack_controller_host }}:10000
+  mode http
+  stats enable
+  stats uri /stats
+  stats refresh 5s
+  stats show-node
+  stats show-legends
+  stats hide-version
+  stats auth admin:admin
+
+listen dashboard_cluster_80
+    bind {{ openstack_controller_host }}:80
+    balance  source
+    option  tcpka
+    option  httpchk
+    option  tcplog
+    server controller1 {{ hostvars.controller01.mgmt_ip }}:80 check inter 2000 rise 2 fall 5
+    server controller2 {{ hostvars.controller02.mgmt_ip }}:80 check inter 2000 rise 2 fall 5
+    server controller3 {{ hostvars.controller03.mgmt_ip }}:80 check inter 2000 rise 2 fall 5
+
+listen galera_cluster
+  bind {{ openstack_controller_host }}:3306
+  balance  source
+  option  httpchk
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:3306 check port 9200 inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:3306 backup check port 9200 inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:3306 backup check port 9200 inter 2000 rise 2 fall 5
+
+listen glance_api_cluster
+  bind {{ openstack_controller_host }}:9292
+  bind {{ openstack_public_vip }}:9292
+  balance  source
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:9292 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:9292 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:9292 check inter 2000 rise 2 fall 5
+
+listen glance_registry_cluster
+  bind {{ openstack_controller_host }}:9191
+  balance  source
+  option  tcpka
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:9191 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:9191 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:9191 check inter 2000 rise 2 fall 5
+
+listen keystone_admin_cluster
+  bind {{ openstack_controller_host }}:35357
+  balance  source
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:35357 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:35357 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:35357 check inter 2000 rise 2 fall 5
+
+listen keystone_public_internal_cluster
+  bind {{ openstack_controller_host }}:5000
+  bind {{ openstack_public_vip }}:5000
+  balance  source
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:5000 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:5000 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:5000 check inter 2000 rise 2 fall 5
+
+listen nova_ec2_api_cluster
+  bind {{ openstack_controller_host }}:8773
+  bind {{ openstack_public_vip }}:8773
+  balance  source
+  option  tcpka
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:8773 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:8773 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:8773 check inter 2000 rise 2 fall 5
+
+listen nova_compute_api_cluster
+  bind {{ openstack_controller_host }}:8774
+  bind {{ openstack_public_vip }}:8774
+  balance  source
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:8774 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:8774 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:8774 check inter 2000 rise 2 fall 5
+
+listen nova_metadata_api_cluster
+  bind {{ openstack_controller_host }}:8775
+  balance  source
+  option  tcpka
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:8775 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:8775 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:8775 check inter 2000 rise 2 fall 5
+
+listen cinder_api_cluster
+  bind {{ openstack_controller_host }}:8776
+  bind {{ openstack_public_vip }}:8776
+  balance  source
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:8776 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:8776 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:8776 check inter 2000 rise 2 fall 5
+
+listen spice_cluster
+  bind {{ openstack_controller_host }}:6080
+  bind {{ openstack_public_vip }}:6080
+  balance  source
+  option  tcpka
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:6080 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:6080 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:6080 check inter 2000 rise 2 fall 5
+
+listen neutron_api_cluster
+  bind {{ openstack_controller_host }}:9696
+  bind {{ openstack_public_vip }}:9696
+  balance  source
+  option  tcpka
+  option  httpchk
+  option  tcplog
+  server controller1 {{ hostvars.controller01.mgmt_ip }}:9696 check inter 2000 rise 2 fall 5
+  server controller2 {{ hostvars.controller02.mgmt_ip }}:9696 check inter 2000 rise 2 fall 5
+  server controller3 {{ hostvars.controller03.mgmt_ip }}:9696 check inter 2000 rise 2 fall 5

@@ -1,0 +1,62 @@
+---
+# tasks file for glance
+
+# Prerequisites
+- name: Prepare Database for glance.
+  include: database.yml
+  vars:
+    db_name: "{{ openstack_glance_db_name }}"
+    db_user: "{{ openstack_glance_db_user }}"
+    db_password: "{{ openstack_glance_db_password }}"
+    db_priv: "{{ openstack_glance_db_name }}.*:ALL"
+  tags: database
+
+- name: Create the service user for glance.
+  include: create_service_user.yml
+  vars:
+    username: glance
+    password: "{{ openstack_glance_keystone_password }}"
+
+- name: Create the service entity for glance.
+  include: service_create.yml
+  vars:
+    name: glance
+    type: image
+    description: OpenStack Image service
+
+- name: Create the API endpoint for glance.
+  include: endpoint_create.yml
+  vars:
+    service: image
+    region: RegionOne
+    endpoints:
+      adminurl: "{{ openstack_glance_adminurl }}"
+      internalurl: "{{ openstack_glance_internalurl }}"
+      publicurl: "{{ openstack_glance_publicurl }}"
+
+# Install and configure
+- name: Install OpenStack glance packages.
+  yum: name={{ item }} state=installed
+  with_items:
+    - openstack-glance
+    - python-glance
+    - python-glanceclient
+
+- name: Copy the configuration files for glance-api.
+  template: src=glance-api.conf.j2 dest=/etc/glance/glance-api.conf
+  notify: restart glance-api
+
+- name: Copy the configuration files for glance-registry.
+  template: src=glance-registry.conf.j2 dest=/etc/glance/glance-registry.conf
+  notify: restart glance-registry
+
+- name: DB sync for glance.
+  shell: su -s /bin/sh -c "glance-manage db_sync" glance
+  ignore_errors: True
+  run_once: True
+
+- name: Ensure images service  is started and enabled on boot
+  service: name={{ item }} enabled=yes state=started
+  with_items:
+  - openstack-glance-api
+  - openstack-glance-registry

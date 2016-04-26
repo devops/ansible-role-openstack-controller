@@ -1,0 +1,99 @@
+---
+# defaults file for ansible-role-openstack-controller
+
+openstack_soft_nofile_limits: 102400
+openstack_hard_nofile_limits: 102400
+
+# ha
+openstack_ha: True
+## corosync
+openstack_corosync_bindnetaddr: "{{ openstack_internal_net }}"
+openstack_corosync_mcastaddr: "239.255.42.1"
+openstack_corosync_mcastport: 5405
+
+openstack_hacluster_password: "openstack"
+
+# ceph
+openstack_ceph_enable: "false"
+
+#
+openstack_admin_vip: "{{ openstack_controller_host }}"
+openstack_internal_vip: "{{ openstack_controller_host }}"
+openstack_public_vip: "{{ openstack_controller_host }}"
+openstack_os_url: "http://{{ openstack_controller_host }}:35357/v3"
+openstack_os_identity_api_version: "3"
+openstack_endpoint_admin_url: "http://{{ openstack_admin_vip }}:35357/v2.0"
+openstack_endpoint_internal_url: "http://{{ openstack_internal_vip }}:5000/v2.0"
+openstack_endpoint_public_url: "http://{{ openstack_public_vip }}:5000/v2.0"
+
+# auth
+openstack_admin_token: "openstack"
+openstack_admin_user: "openstack"
+openstack_admin_password: "openstack"
+
+# keystone
+openstack_keystone_db_name: "keystone"
+openstack_keystone_db_user: "keystone"
+openstack_keystone_db_password: "keystone"
+openstack_keystone_config_default_verbose: "True"
+openstack_keystone_config_token_provider: "uuid"
+openstack_keystone_config_token_driver: "memcache"
+openstack_keystone_config_revoke_driver: "sql"
+
+# glance
+openstack_glance_keystone_password: "openstack"
+openstack_glance_db_name: "glance"
+openstack_glance_db_user: "glance"
+openstack_glance_db_password: "glance"
+openstack_glance_adminurl: "http://{{ openstack_admin_vip }}:9292"
+openstack_glance_internalurl: "http://{{ openstack_internal_vip }}:9292"
+openstack_glance_publicurl: "http://{{ openstack_public_vip }}:9292"
+
+# nova controller
+openstack_nova_keystone_password: "openstack"
+openstack_nova_db_name: "nova"
+openstack_nova_db_user: "nova"
+openstack_nova_db_password: "nova"
+openstack_nova_adminurl: "http://{{ openstack_admin_vip }}:8774/v2/%\\(tenant_id\\)s"
+openstack_nova_intelnalurl: "http://{{ openstack_internal_vip }}:8774/v2/%\\(tenant_id\\)s"
+openstack_nova_publicurl: "http://{{ openstack_public_vip }}:8774/v2/%\\(tenant_id\\)s"
+
+# neutron controller
+openstack_neutron_keystone_password: "openstack"
+openstack_neutron_db_name: "neutron"
+openstack_neutron_db_user: "neutron"
+openstack_neutron_db_password: "neutron"
+openstack_neutron_adminurl: "http://{{ openstack_admin_vip }}:9696"
+openstack_neutron_intelnalurl: "http://{{ openstack_internal_vip }}:9696"
+openstack_neutron_publicurl: "http://{{ openstack_public_vip }}:9696"
+openstack_neutron_public_interface: "br-eth2"
+openstack_neutron_metadata_secret: "openstack"
+
+# cinder
+openstack_cinder_user_password: "openstack"
+openstack_cinder_db_name: "cinder"
+openstack_cinder_db_user: "cinder"
+openstack_cinder_db_password: "cinder"
+openstack_cinder_adminurl_v1: "http://{{ openstack_admin_vip }}:8776/v1/%\\(tenant_id\\)s"
+openstack_cinder_internalurl_v1: "http://{{ openstack_internal_vip }}:8776/v1/%\\(tenant_id\\)s"
+openstack_cinder_publicurl_v1: "http://{{ openstack_public_vip }}:8776/v1/%\\(tenant_id\\)s"
+openstack_cinder_adminurl_v2: "http://{{ openstack_admin_vip }}:8776/v2/%\\(tenant_id\\)s"
+openstack_cinder_intelnalurl_v2: "http://{{ openstack_internal_vip }}:8776/v2/%\\(tenant_id\\)s"
+openstack_cinder_publicurl_v2: "http://{{ openstack_public_vip }}:8776/v2/%\\(tenant_id\\)s"
+
+## auth env
+token_auth_env:
+  OS_TOKEN: "{{ openstack_admin_token }}"
+  OS_URL: "{{ openstack_os_url }}"
+  OS_IDENTITY_API_VERSION: "{{ openstack_os_identity_api_version }}"
+
+admin_auth_env:
+  OS_PROJECT_DOMAIN_ID: default
+  OS_USER_DOMAIN_ID: default
+  OS_PROJECT_NAME: admin
+  OS_TENANT_NAME: admin
+  OS_USERNAME: admin
+  OS_PASSWORD: "{{ openstack_admin_password }}"
+  OS_AUTH_URL: "{{ openstack_os_url }}"
+  OS_IDENTITY_API_VERSION: "{{ openstack_os_identity_api_version }}"
+

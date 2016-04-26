@@ -1,0 +1,80 @@
+---
+# tasks file for neutron
+
+# Prerequisites
+- name: Prepare Database for neutron.
+  include: database.yml
+  vars:
+    db_name: "{{ openstack_neutron_db_name }}"
+    db_user: "{{ openstack_neutron_db_user }}"
+    db_password: "{{ openstack_neutron_db_password }}"
+  tags: database
+
+- name: Create the service user for neutron.
+  include: create_service_user.yml
+  vars:
+    username: neutron
+    password: "{{ openstack_neutron_keystone_password }}"
+
+- name: Create the service entity for neutron.
+  include: service_create.yml
+  vars:
+    name: neutron
+    type: network
+    description: OpenStack Networking
+
+- name: Create the API endpoint for neutron.
+  include: endpoint_create.yml
+  vars:
+    service: network
+    region: RegionOne
+    endpoints:
+      adminurl: "{{ openstack_neutron_adminurl }}"
+      internalurl: "{{ openstack_neutron_intelnalurl }}"
+      publicurl: "{{ openstack_neutron_publicurl }}"
+
+# Install and configure
+- name: Install OpenStack neutron packages.
+  yum: name={{ item }} state=installed
+  with_items:
+    - openstack-neutron
+    - openstack-neutron-ml2
+    - openstack-neutron-linuxbridge
+    - python-neutronclient
+    - ebtables
+    - ipset
+
+- name: Copy the neutron configuration files for neutron.
+  template: src=neutron.conf.j2 dest=/etc/neutron/neutron.conf
+
+- name: Copy the neutron ML2 configuration files for neutron.
+  template: src=ml2_conf.ini.j2 dest=/etc/neutron/plugins/ml2/ml2_conf.ini
+
+- name: Copy the neutron linux bridge configuration files for neutron.
+  template: src=linuxbridge_agent.ini.j2 dest=/etc/neutron/plugins/ml2/linuxbridge_agent.ini
+
+- name: Copy the neutron dhcp agent configuration files for neutron.
+  template: src=dhcp_agent.ini.j2 dest=/etc/neutron/dhcp_agent.ini
+
+- name: Copy the metadata agent configuration files for neutron.
+  template: src=metadata_agent.ini.j2 dest=/etc/neutron/metadata_agent.ini
+
+- name: Ensure ml2 config symbolic is exists.
+  file: src=/etc/neutron/plugins/ml2/ml2_conf.ini dest=/etc/neutron/plugin.ini state=link
+
+- name: DB sync for neutron.
+  shell: |
+    su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf \
+         --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+  ignore_errors: True
+  run_once: True
+  notify: restart nova
+
+- name: Ensure neutron service is started and enabled on boot.
+  service: name={{ item }} enabled=yes state=started
+  ignore_errors: True
+  with_items:
+    - neutron-server
+    - neutron-linuxbridge-agent
+    - neutron-dhcp-agent
+    - neutron-metadata-agent

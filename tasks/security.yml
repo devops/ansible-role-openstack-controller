@@ -1,0 +1,6 @@
+---
+# tasks file for security
+
+- name: Disable the temporary authentication token mechanism.
+  shell: |
+    sed -i 's/token_auth admin_token_auth/token_auth/g' /usr/share/keystone/keystone-dist-paste.ini

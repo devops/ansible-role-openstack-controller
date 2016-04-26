@@ -1,0 +1,24 @@
+---
+# - include: create-service-user.yml
+#   vars:
+#     username: glance
+#     password: "{{ openstack_glance_keystone_password }}"
+
+- name: 'Ensure the "{{ username }}" user exists'
+  keystone_user: >
+    user={{ username }}
+    password={{ password }}
+    tenant=service
+    token={{ openstack_admin_token }}
+    endpoint={{ openstack_endpoint_admin_url }}
+  run_once: True
+
+- name: 'Ensure the "admin" role exists'
+  keystone_user: >
+    role=admin
+    user={{ username }}
+    tenant=service
+    token={{ openstack_admin_token }}
+    endpoint={{ openstack_endpoint_admin_url }}
+  run_once: True
+

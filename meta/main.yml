@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  author: z@zstack.net
+  description: openstack controller configure
+  company: 
+  min_ansible_version: 1.8
+  platforms:
+  - name: EL
+    versions:
+    - 7
+  categories:
+  - cloud
+  - system
+dependencies: []
