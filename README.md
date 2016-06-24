@@ -18,6 +18,10 @@ None.
 
 ## Example Playbook
 
+## License
+
+MIT / BSD
+
 ## Author Information
 
 z@zstack.net
